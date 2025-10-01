@@ -7,6 +7,8 @@ Each folder contains:
 - My technical report that should be read second
 - The code to train the networks and analyse the results. I heavily modified provided skeleton code, in order to provide functionality like support for multiple experiments; Weights&Biases training progress tracking; plotting and analysis of results.
 
+The courseworks were:
+
 - Coursework 1: MLP and LSTM
 
 <img width="459" height="495" alt="image" src="https://github.com/user-attachments/assets/6f7e1434-1a33-49fa-bbcd-87acc401c810" />
