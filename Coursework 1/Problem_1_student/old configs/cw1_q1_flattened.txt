@@ -1,0 +1,85 @@
+def cw1_q1_flattened():
+    # Read data from .mat file
+    path = "Data\\Material_A.mat"
+    data_reader = MatRead(path)
+    strain = data_reader.get_strain()
+    stress = data_reader.get_stress()
+    strain = strain.reshape(strain.shape[0], -1)
+    stress = stress.reshape(stress.shape[0], -1)
+    assert stress.shape[0] == strain.shape[0], "Number of samples in stress and strain data do not match"
+
+    # Split data into train and test
+    ntrain = round(stress.shape[0]*0.8) # Specify the training data
+    ntest = round(stress.shape[0]*0.2)  # Specify the test data
+    assert ntrain + ntest == stress.shape[0], "Train and test data do not add up to total data"
+    train_strain = strain[:ntrain]
+    train_stress = stress[:ntrain]
+    test_strain = strain[-ntest:]
+    test_stress = stress[-ntest:]
+
+    # Normalize the data
+    strain_normaliser = NormaliseMeanStd(train_strain)
+    train_strain_encode = strain_normaliser.normalise(train_strain)
+    test_strain_encode = strain_normaliser.normalise(test_strain)
+
+    stress_normaliser = NormaliseMeanStd(train_stress)
+    train_stress_encode = stress_normaliser.normalise(train_stress)
+    test_stress_encode = stress_normaliser.normalise(test_stress)
+
+    # Create data loaders
+    fixed_params_train = {
+        "stress" : train_strain_encode,
+        "strain" : train_stress_encode,
+        "drop_last" : True,
+    }
+    fixed_params_valid = {
+        "stress" : test_strain_encode,
+        "strain" : test_stress_encode,
+        "drop_last" : False,
+    }
+
+    # drop_last means that the last batch will be dropped if it is not full. avoids large updates from small samples
+    def init_dl(batch_size, dev, **fixed_params):
+        set = torch.utils.data.TensorDataset(fixed_params["stress"], fixed_params["strain"])
+        dl = _dataloader.WrappedDataLoader(
+            torch.utils.data.DataLoader(set, batch_size, shuffle=True, drop_last=fixed_params["drop_last"]),
+            lambda x, y: (x.to(dev), y.to(dev))
+        )
+        return dl
+    
+    train_dl_initialiser = InitialiseDataloader(init_dl, fixed_params_train)
+    valid_dl_initialiser = InitialiseDataloader(init_dl, fixed_params_valid)
+
+    loss_function = torch.nn.MSELoss()
+    model = _model.FCNN
+
+    # Optimiser hyperparameters to try. The model will be trained for all possible combinations of these.
+    OPTIMISER_HYPERPARAMS = {
+        "lr" : [0.01, 0.005, 0.001],
+        # "betas" : [(0.9, 0.999)],
+        "weight_decay" : [1e-2],
+    }
+
+    # Define parameters for FCNN model
+    flattened_size = test_strain_encode.shape[1]
+    MODEL_HYPERPARAMS = {
+        "layer_sizes" : [[flattened_size, 1000, 1000, flattened_size]],
+                         #[flattened_size, 500, flattened_size],
+                         #[flattened_size, 1000, flattened_size],
+                         #[flattened_size, 400, 400, 400, flattened_size]
+    }
+
+    # Other hyperparameters to try. The model will be trained for all possible combinations of these.
+    HYPERPARAMS = {
+        "epochs" : [50],
+        "batch_size" : [20],
+        "clip_value" : [1.0],
+    }
+
+    return ExperimentConfig(
+        "Coursework 1 Part 1 Deep FCNN", "cw1_q1_flattened_with_dropout",
+        train_dl_initialiser, valid_dl_initialiser,
+        model, loss_function,
+        OPTIMISER_HYPERPARAMS, MODEL_HYPERPARAMS, HYPERPARAMS,
+        log_wandb=True, params_folder="params",
+    )
