@@ -1,6 +1,6 @@
 This repository contains coursework I completed for the 4C11 module.
 
-In each coursework, new Neural Network architectures are introducted, implemented and tested on datasets:
+In each coursework, new Neural Network architectures are introducted, implemented and tested on different datasets, based on stress and strain of materials:
 - Coursework 1: MLP and LSTM
 
 <img width="459" height="495" alt="image" src="https://github.com/user-attachments/assets/6f7e1434-1a33-49fa-bbcd-87acc401c810" />
